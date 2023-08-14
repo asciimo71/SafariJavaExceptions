@@ -87,8 +87,11 @@ class Either<S, F> {
     Function<Either<S, F>, Either<S, F>> op, int count) {
     return e -> {
       Either<S, F> self = this;
-      while (self.isFailure() && count > 0) {
+      int retries = count;
+      while (self.isFailure() && (retries--) > 0) {
+        System.out.println("repeating (counter = " + retries + ")");
         self = op.apply(self);
+        System.out.println("result is success? " + self.isSuccess());
       }
       return self;
     };
@@ -138,7 +141,8 @@ public class Example {
           "It failed, with message " + e1.getFailure().getMessage());
         return e1;
       }))
-//      .map(e -> e.recover(delay))
+      .map(e -> e.recover(e1 -> e1.repeat(delay, 3).apply(e)))
+      .map(e -> e.recover(delay))
       .map(e -> e.recover(fallback))
 //      .peek(e -> e.report(t -> System.out.println("It failed again, with message " + t.getMessage())))
       .map(e -> e.reporter(e1 -> {
